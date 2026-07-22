@@ -1,7 +1,7 @@
 === Z-Update — Agent ===
 Requires at least: 6.6
 Requires PHP: 7.4
-Stable tag: 0.4.1
+Stable tag: 0.4.2
 License: GPLv2 or later
 
 Agent léger de Z-Update pour hébergements WordPress mutualisés.
@@ -12,3 +12,13 @@ Agent léger de Z-Update pour hébergements WordPress mutualisés.
 2. Ouvrir Réglages > Z-Update.
 3. Saisir l’URL HTTPS du maître, le jeton à usage unique et l’hébergement.
 4. Vérifier que la synchronisation, la santé et la sauvegarde UpdraftPlus apparaissent sur le maître.
+
+== Changelog ==
+
+= 0.4.2 =
+* Retransmission persistante des résultats jusqu’à leur confirmation par le maître.
+* Vérification stricte de la version cible avant et après chaque mise à jour.
+* Correction de la version cible remontée pour les mises à jour du cœur WordPress.
+
+= 0.4.1 =
+* Plugin Update Checker et vérification RSA-SHA256 des paquets de mise à jour.

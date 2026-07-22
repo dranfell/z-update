@@ -4,6 +4,7 @@ defined( 'ABSPATH' ) || exit;
 final class WUO_Agent_Client {
 	const CRON_HOOK = 'wuo_agent_poll';
 	const OPTION    = 'wuo_agent_settings';
+	const PENDING_RESULT_OPTION = 'wuo_agent_pending_result';
 
 	public static function init() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'cron_schedules' ) );
@@ -77,6 +78,12 @@ final class WUO_Agent_Client {
 		if ( get_transient( 'wuo_agent_update_lock' ) ) {
 			return;
 		}
+		$pending = self::flush_pending_result();
+		if ( is_wp_error( $pending ) ) {
+			$policy = self::policy( get_option( self::OPTION, array() ) );
+			self::schedule_next_poll( $policy['poll_active'], $policy['jitter'] );
+			return;
+		}
 
 		self::maybe_heartbeat();
 		$settings = get_option( self::OPTION, array() );
@@ -98,11 +105,42 @@ final class WUO_Agent_Client {
 		}
 
 		$result = WUO_Agent_Runner::run( $response['job'] );
-		self::request( 'POST', '/wp-json/wuo/v1/jobs/result', array(
-			'job_id' => absint( $response['job']['id'] ),
-			'result' => $result,
-		) );
+		self::queue_result( absint( $response['job']['id'] ), $result );
+		self::flush_pending_result();
 		self::schedule_next_poll( $policy['poll_active'], $policy['jitter'] );
+	}
+
+	private static function queue_result( $job_id, array $result ) {
+		update_option( self::PENDING_RESULT_OPTION, array(
+			'job_id'       => absint( $job_id ),
+			'result'       => $result,
+			'created_at'   => time(),
+			'attempts'     => 0,
+			'last_attempt' => 0,
+		), false );
+	}
+
+	private static function flush_pending_result() {
+		$pending = get_option( self::PENDING_RESULT_OPTION, array() );
+		if ( empty( $pending ) ) {
+			return true;
+		}
+		if ( ! is_array( $pending ) || empty( $pending['job_id'] ) || ! isset( $pending['result'] ) || ! is_array( $pending['result'] ) ) {
+			return new WP_Error( 'pending_result_invalid', 'Le résultat local en attente est invalide et nécessite une vérification.' );
+		}
+
+		$pending['attempts']     = absint( $pending['attempts'] ?? 0 ) + 1;
+		$pending['last_attempt'] = time();
+		update_option( self::PENDING_RESULT_OPTION, $pending, false );
+		$response = self::request( 'POST', '/wp-json/wuo/v1/jobs/result', array(
+			'job_id' => absint( $pending['job_id'] ),
+			'result' => $pending['result'],
+		) );
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+		delete_option( self::PENDING_RESULT_OPTION );
+		return true;
 	}
 
 	private static function maybe_heartbeat() {
@@ -231,7 +269,8 @@ final class WUO_Agent_Client {
 		require_once ABSPATH . 'wp-admin/includes/update.php';
 		$core = get_site_transient( 'update_core' );
 		if ( ! empty( $core->updates[0] ) && 'upgrade' === $core->updates[0]->response ) {
-			$updates[] = array( 'type' => 'core', 'slug' => 'wordpress', 'name' => 'WordPress', 'version' => $core->updates[0]->version );
+			$target_version = isset( $core->updates[0]->current ) ? $core->updates[0]->current : ( $core->updates[0]->version ?? '' );
+			$updates[] = array( 'type' => 'core', 'slug' => 'wordpress', 'name' => 'WordPress', 'version' => $target_version );
 		}
 		return array_slice( $updates, 0, 100 );
 	}
