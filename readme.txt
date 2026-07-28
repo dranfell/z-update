@@ -1,7 +1,7 @@
 === Z-Update — Agent ===
 Requires at least: 6.6
 Requires PHP: 7.4
-Stable tag: 0.4.3
+Stable tag: 0.4.4
 License: GPLv2 or later
 
 Agent léger de Z-Update pour hébergements WordPress mutualisés.
@@ -14,6 +14,9 @@ Agent léger de Z-Update pour hébergements WordPress mutualisés.
 4. Vérifier que la synchronisation, la santé et la sauvegarde UpdraftPlus apparaissent sur le maître.
 
 == Changelog ==
+
+= 0.4.4 =
+* Remplacement de la vérification GitHub API par un manifest JSON statique pour éviter les erreurs 403.
 
 = 0.4.3 =
 * Les mises à jour WordPress orchestrées ne nécessitent plus de validation manuelle.

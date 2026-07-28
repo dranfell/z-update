@@ -3,6 +3,7 @@
 define( 'ABSPATH', __DIR__ . '/wordpress/' );
 define( 'WPINC', 'wp-includes' );
 define( 'WP_PLUGIN_DIR', ABSPATH . 'wp-content/plugins' );
+define( 'WUO_AGENT_FILE', dirname( __DIR__ ) . '/wp-update-orchestrator-agent.php' );
 
 $GLOBALS['test_options'] = array();
 $GLOBALS['remote_response'] = null;
@@ -44,6 +45,7 @@ function wp_remote_retrieve_response_code( $response ) { return is_array( $respo
 
 require dirname( __DIR__ ) . '/includes/class-wuo-agent-signature.php';
 require dirname( __DIR__ ) . '/includes/class-z-update-package-verifier.php';
+require dirname( __DIR__ ) . '/includes/class-z-update-agent-updater.php';
 require dirname( __DIR__ ) . '/includes/class-wuo-agent-runner.php';
 require dirname( __DIR__ ) . '/includes/class-wuo-agent-client.php';
 
@@ -59,6 +61,12 @@ $canonical = WUO_Agent_Signature::canonical( 100, 'nonce', 'post', 'wp-json/wuo/
 $assert( "100\nnonce\nPOST\n/wp-json/wuo/v1/jobs/result\n" . hash( 'sha256', '{}' ) === $canonical, 'La canonicalisation HMAC doit rester stable.' );
 $assert( 'https://github.com/zimages/z-update' === Z_Update_Package_Verifier::valid_repository( 'https://github.com/zimages/z-update.git/' ), 'Le dépôt GitHub attendu doit être accepté.' );
 $assert( '' === Z_Update_Package_Verifier::valid_repository( 'https://example.com/zimages/z-update' ), 'Un autre hôte doit être refusé.' );
+$metadata_url = new ReflectionMethod( Z_Update_Agent_Updater::class, 'metadata_url' );
+$metadata_url->setAccessible( true );
+$assert(
+	'https://github.com/zimages/z-update/releases/latest/download/z-update-agent-update.json' === $metadata_url->invoke( null, 'https://github.com/zimages/z-update' ),
+	'PUC doit utiliser le manifest JSON statique au lieu de l’API GitHub.'
+);
 
 $versions_match = new ReflectionMethod( WUO_Agent_Runner::class, 'versions_match' );
 $versions_match->setAccessible( true );
