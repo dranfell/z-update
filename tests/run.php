@@ -65,6 +65,8 @@ $versions_match->setAccessible( true );
 $assert( true === $versions_match->invoke( null, '1.2.3', '1.2.3' ), 'Une version exacte doit être acceptée.' );
 $assert( false === $versions_match->invoke( null, '1.2.3', '1.2.4' ), 'Une version différente doit être refusée.' );
 $assert( false === $versions_match->invoke( null, '', '' ), 'Une cible vide doit être refusée.' );
+$runner_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wuo-agent-runner.php' );
+$assert( false === strpos( $runner_source, 'core_approval_required' ), 'Les mises à jour WordPress orchestrées ne doivent plus exiger une validation manuelle.' );
 
 $GLOBALS['test_options'][ WUO_Agent_Client::OPTION ] = array(
 	'master_url' => 'https://master.example',

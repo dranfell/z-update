@@ -142,9 +142,6 @@ final class WUO_Agent_Runner {
 		}
 
 		if ( 'core' === $type ) {
-			if ( empty( $job['manual_approval'] ) ) {
-				return new WP_Error( 'core_approval_required', 'Une validation manuelle est obligatoire pour WordPress.' );
-			}
 			if ( '' === $target_version ) {
 				return new WP_Error( 'target_version_missing', 'La version cible de WordPress est absente.' );
 			}
@@ -156,7 +153,7 @@ final class WUO_Agent_Runner {
 			$selected = null;
 			foreach ( $updates as $update ) {
 				$available = sanitize_text_field( $update->current ?? ( $update->version ?? '' ) );
-				if ( 'upgrade' === ( $update->response ?? '' ) && self::versions_match( $target_version, $available ) ) {
+				if ( in_array( $update->response ?? '', array( 'upgrade', 'autoupdate' ), true ) && self::versions_match( $target_version, $available ) ) {
 					$selected = $update;
 					break;
 				}

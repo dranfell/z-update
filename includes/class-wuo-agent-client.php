@@ -268,9 +268,25 @@ final class WUO_Agent_Client {
 		}
 		require_once ABSPATH . 'wp-admin/includes/update.php';
 		$core = get_site_transient( 'update_core' );
-		if ( ! empty( $core->updates[0] ) && 'upgrade' === $core->updates[0]->response ) {
-			$target_version = isset( $core->updates[0]->current ) ? $core->updates[0]->current : ( $core->updates[0]->version ?? '' );
-			$updates[] = array( 'type' => 'core', 'slug' => 'wordpress', 'name' => 'WordPress', 'version' => $target_version );
+		if ( ! empty( $core->updates ) && is_array( $core->updates ) ) {
+			foreach ( $core->updates as $core_update ) {
+				$response = sanitize_key( $core_update->response ?? '' );
+				if ( ! in_array( $response, array( 'upgrade', 'autoupdate' ), true ) ) {
+					continue;
+				}
+				$target_version = isset( $core_update->current ) ? $core_update->current : ( $core_update->version ?? '' );
+				if ( ! $target_version ) {
+					continue;
+				}
+				$updates[] = array(
+					'type'          => 'core',
+					'slug'          => 'wordpress',
+					'name'          => 'WordPress',
+					'version'       => $target_version,
+					'core_response' => $response,
+				);
+				break;
+			}
 		}
 		return array_slice( $updates, 0, 100 );
 	}
