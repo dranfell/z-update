@@ -5,6 +5,7 @@ final class WUO_Agent_Client {
 	const CRON_HOOK = 'wuo_agent_poll';
 	const OPTION    = 'wuo_agent_settings';
 	const PENDING_RESULT_OPTION = 'wuo_agent_pending_result';
+	const MASTER_UNREACHABLE_ALERT_TRANSIENT = 'wuo_agent_master_unreachable_alert_sent';
 
 	public static function init() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'cron_schedules' ) );
@@ -81,6 +82,7 @@ final class WUO_Agent_Client {
 		$pending = self::flush_pending_result();
 		if ( is_wp_error( $pending ) ) {
 			$policy = self::policy( get_option( self::OPTION, array() ) );
+			self::maybe_alert_master_unreachable( $pending );
 			self::schedule_next_poll( $policy['poll_active'], $policy['jitter'] );
 			return;
 		}
@@ -94,6 +96,7 @@ final class WUO_Agent_Client {
 		$response = self::request( 'POST', '/wp-json/wuo/v1/jobs/next', array() );
 		$policy   = self::policy( get_option( self::OPTION, array() ) );
 		if ( is_wp_error( $response ) ) {
+			self::maybe_alert_master_unreachable( $response );
 			self::schedule_next_poll( $policy['poll_idle'], $policy['jitter'] );
 			return;
 		}
@@ -183,7 +186,9 @@ final class WUO_Agent_Client {
 			),
 		) );
 
-		if ( ! is_wp_error( $response ) ) {
+		if ( is_wp_error( $response ) ) {
+			self::maybe_alert_master_unreachable( $response );
+		} else {
 			$settings = get_option( self::OPTION, array() );
 			$settings['last_heartbeat'] = time();
 			if ( isset( $response['policy'] ) && is_array( $response['policy'] ) ) {
@@ -192,6 +197,42 @@ final class WUO_Agent_Client {
 			update_option( self::OPTION, $settings, false );
 		}
 		return $response;
+	}
+
+	public static function master_unreachable_since() {
+		$settings = get_option( self::OPTION, array() );
+		if ( empty( $settings['site_id'] ) ) {
+			return 0;
+		}
+		$last = absint( $settings['last_master_contact'] ?? $settings['paired_at'] ?? 0 );
+		if ( ! $last ) {
+			return 0;
+		}
+		$policy = self::policy( $settings );
+		return $last <= time() - $policy['failover_hours'] * HOUR_IN_SECONDS ? $last : 0;
+	}
+
+	private static function maybe_alert_master_unreachable( WP_Error $error ) {
+		$since = self::master_unreachable_since();
+		if ( ! $since || get_transient( self::MASTER_UNREACHABLE_ALERT_TRANSIENT ) ) {
+			return;
+		}
+		$email = get_option( 'admin_email', '' );
+		if ( ! is_email( $email ) ) {
+			return;
+		}
+		$settings = get_option( self::OPTION, array() );
+		$policy   = self::policy( is_array( $settings ) ? $settings : array() );
+		$subject  = 'Maître injoignable : ' . wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+		$message  = "L’agent Z-Update ne contacte plus le maître depuis le délai maximal configuré.\n\n";
+		$message .= 'Site : ' . get_bloginfo( 'name' ) . "\n";
+		$message .= 'URL : ' . home_url( '/' ) . "\n";
+		$message .= 'Maître : ' . ( $settings['master_url'] ?? 'non renseigné' ) . "\n";
+		$message .= 'Dernier contact maître : ' . wp_date( 'd/m/Y H:i:s', $since ) . "\n";
+		$message .= 'Délai configuré : ' . absint( $policy['failover_hours'] ) . " h\n";
+		$message .= 'Erreur courante : ' . $error->get_error_message() . "\n";
+		wp_mail( $email, '[Z-Update] ' . sanitize_text_field( $subject ), sanitize_textarea_field( $message ) );
+		set_transient( self::MASTER_UNREACHABLE_ALERT_TRANSIENT, 1, 12 * HOUR_IN_SECONDS );
 	}
 
 	private static function schedule_next_poll( $delay, $jitter ) {
@@ -248,6 +289,7 @@ final class WUO_Agent_Client {
 		$settings = get_option( self::OPTION, array() );
 		$settings['last_master_contact'] = time();
 		update_option( self::OPTION, $settings, false );
+		delete_transient( self::MASTER_UNREACHABLE_ALERT_TRANSIENT );
 		return is_array( $data ) ? $data : array();
 	}
 

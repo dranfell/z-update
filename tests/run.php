@@ -4,6 +4,7 @@ define( 'ABSPATH', __DIR__ . '/wordpress/' );
 define( 'WPINC', 'wp-includes' );
 define( 'WP_PLUGIN_DIR', ABSPATH . 'wp-content/plugins' );
 define( 'WUO_AGENT_FILE', dirname( __DIR__ ) . '/wp-update-orchestrator-agent.php' );
+define( 'HOUR_IN_SECONDS', 3600 );
 
 $GLOBALS['test_options'] = array();
 $GLOBALS['remote_response'] = null;
@@ -39,6 +40,15 @@ function add_filter() { return true; }
 function get_option( $name, $default = false ) { return array_key_exists( $name, $GLOBALS['test_options'] ) ? $GLOBALS['test_options'][ $name ] : $default; }
 function update_option( $name, $value ) { $GLOBALS['test_options'][ $name ] = $value; return true; }
 function delete_option( $name ) { unset( $GLOBALS['test_options'][ $name ] ); return true; }
+function get_transient() { return false; }
+function set_transient() { return true; }
+function delete_transient() { return true; }
+function is_email( $email ) { return false !== filter_var( $email, FILTER_VALIDATE_EMAIL ); }
+function home_url( $path = '' ) { return 'https://agent.example' . $path; }
+function get_bloginfo( $field ) { return 'name' === $field ? 'Agent test' : '6.8.3'; }
+function wp_date( $format, $timestamp = null ) { return date( $format, $timestamp ?: time() ); }
+function sanitize_textarea_field( $value ) { return trim( strip_tags( (string) $value ) ); }
+function wp_mail() { return true; }
 function wp_safe_remote_request() { return $GLOBALS['remote_response']; }
 function wp_remote_retrieve_body( $response ) { return is_array( $response ) ? ( $response['body'] ?? '' ) : ''; }
 function wp_remote_retrieve_response_code( $response ) { return is_array( $response ) ? (int) ( $response['response']['code'] ?? 0 ) : 0; }
@@ -75,6 +85,10 @@ $assert( false === $versions_match->invoke( null, '1.2.3', '1.2.4' ), 'Une versi
 $assert( false === $versions_match->invoke( null, '', '' ), 'Une cible vide doit être refusée.' );
 $runner_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wuo-agent-runner.php' );
 $assert( false === strpos( $runner_source, 'core_approval_required' ), 'Les mises à jour WordPress orchestrées ne doivent plus exiger une validation manuelle.' );
+$client_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wuo-agent-client.php' );
+$admin_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wuo-agent-admin.php' );
+$assert( false !== strpos( $client_source, 'maybe_alert_master_unreachable' ), 'L’agent doit alerter localement si le maître dépasse le délai de secours.' );
+$assert( false !== strpos( $admin_source, 'Dernier contact maître' ), 'L’écran agent doit afficher le dernier contact maître.' );
 
 $GLOBALS['test_options'][ WUO_Agent_Client::OPTION ] = array(
 	'master_url' => 'https://master.example',
