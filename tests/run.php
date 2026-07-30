@@ -87,8 +87,11 @@ $runner_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wuo-ag
 $assert( false === strpos( $runner_source, 'core_approval_required' ), 'Les mises à jour WordPress orchestrées ne doivent plus exiger une validation manuelle.' );
 $client_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wuo-agent-client.php' );
 $admin_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wuo-agent-admin.php' );
+$updraft_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wuo-agent-updraft.php' );
 $assert( false !== strpos( $client_source, 'maybe_alert_master_unreachable' ), 'L’agent doit alerter localement si le maître dépasse le délai de secours.' );
 $assert( false !== strpos( $admin_source, 'Dernier contact maître' ), 'L’écran agent doit afficher le dernier contact maître.' );
+$assert( false !== strpos( $updraft_source, 'running_since' ), 'L’agent doit dater les sauvegardes UpdraftPlus en cours.' );
+$assert( false !== strpos( $updraft_source, 'RUNNING_MAX_AGE' ), 'Le marqueur UpdraftPlus en cours ne doit pas rester bloquant trop longtemps.' );
 
 $GLOBALS['test_options'][ WUO_Agent_Client::OPTION ] = array(
 	'master_url' => 'https://master.example',

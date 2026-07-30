@@ -3,6 +3,7 @@ defined( 'ABSPATH' ) || exit;
 
 final class WUO_Agent_Updraft {
 	const SNAPSHOT_OPTION = 'wuo_agent_updraft_snapshot';
+	const RUNNING_MAX_AGE = 2 * HOUR_IN_SECONDS;
 
 	public static function init() {
 		add_filter( 'updraft_plus_save_last_backup', array( __CLASS__, 'capture_last_backup' ), 99 );
@@ -11,7 +12,7 @@ final class WUO_Agent_Updraft {
 	}
 
 	public static function mark_running() {
-		set_transient( 'wuo_updraft_running', time(), 6 * HOUR_IN_SECONDS );
+		set_transient( 'wuo_updraft_running', time(), self::RUNNING_MAX_AGE );
 	}
 
 	public static function capture_last_backup( $last_backup ) {
@@ -21,7 +22,16 @@ final class WUO_Agent_Updraft {
 	}
 
 	public static function is_running() {
-		return (bool) get_transient( 'wuo_updraft_running' );
+		return (bool) self::running_since();
+	}
+
+	private static function running_since() {
+		$since = absint( get_transient( 'wuo_updraft_running' ) );
+		if ( $since && $since < time() - self::RUNNING_MAX_AGE ) {
+			delete_transient( 'wuo_updraft_running' );
+			return 0;
+		}
+		return $since;
 	}
 
 	public static function status() {
@@ -34,7 +44,8 @@ final class WUO_Agent_Updraft {
 			'has_database'       => false,
 			'has_files'          => false,
 			'complete'           => false,
-			'running'            => self::is_running(),
+			'running_since'      => self::running_since(),
+			'running'            => false,
 			'next_file_backup'   => self::next_scheduled( 'updraft_backup' ),
 			'next_database_backup'=> self::next_scheduled( 'updraft_backup_database' ),
 			'source'             => 'none',
@@ -61,6 +72,11 @@ final class WUO_Agent_Updraft {
 		if ( $status['latest_timestamp'] ) {
 			$status['age_seconds'] = max( 0, time() - (int) $status['latest_timestamp'] );
 		}
+		if ( $status['running_since'] && $status['latest_timestamp'] >= $status['running_since'] ) {
+			delete_transient( 'wuo_updraft_running' );
+			$status['running_since'] = 0;
+		}
+		$status['running'] = (bool) $status['running_since'];
 		$status['complete'] = (bool) ( $status['remote_confirmed'] && $status['has_database'] && $status['has_files'] );
 
 		return $status;
