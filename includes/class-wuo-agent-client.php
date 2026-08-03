@@ -32,7 +32,7 @@ final class WUO_Agent_Client {
 		if ( 'https' !== wp_parse_url( $master_url, PHP_URL_SCHEME ) ) {
 			return new WP_Error( 'https_required', 'Le maître doit utiliser une URL HTTPS.' );
 		}
-		if ( ! in_array( $pool, array( 'performance-a', 'performance-b', 'perso' ), true ) ) {
+		if ( ! in_array( $pool, array( 'performance-a', 'performance-b', 'perso', 'external', 'ekinox-1', 'ekinox-2', 'ekinox-3' ), true ) ) {
 			return new WP_Error( 'invalid_hosting_pool', 'L’hébergement sélectionné est invalide.' );
 		}
 		$route = '/wp-json/wuo/v1/pair';

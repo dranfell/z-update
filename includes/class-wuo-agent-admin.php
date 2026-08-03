@@ -60,7 +60,7 @@ final class WUO_Agent_Admin {
 				<input type="hidden" name="action" value="wuo_agent_pair"><?php wp_nonce_field( 'wuo_agent_pair' ); ?>
 				<table class="form-table"><tr><th><label for="master_url">URL du maître</label></th><td><input class="regular-text" type="url" id="master_url" name="master_url" required></td></tr>
 				<tr><th><label for="pairing_token">Jeton d’appairage</label></th><td><input class="regular-text" id="pairing_token" name="pairing_token" required autocomplete="off"></td></tr>
-				<tr><th><label for="hosting_pool">Hébergement</label></th><td><select id="hosting_pool" name="hosting_pool"><option value="performance-a">Performance A</option><option value="performance-b">Performance B</option><option value="perso">Mutualisé Perso</option></select></td></tr></table>
+			<tr><th><label for="hosting_pool">Hébergement</label></th><td><select id="hosting_pool" name="hosting_pool"><option value="performance-a">Performance A</option><option value="performance-b">Performance B</option><option value="perso">Mutualisé Perso</option><option value="external">Externe</option><option value="ekinox-1">Ekinox 1</option><option value="ekinox-2">Ekinox 2</option><option value="ekinox-3">Ekinox 3</option></select></td></tr></table>
 				<?php submit_button( 'Appairer le site' ); ?>
 			</form>
 		<?php else : ?>
@@ -80,7 +80,7 @@ final class WUO_Agent_Admin {
 				<input type="hidden" name="action" value="wuo_agent_pair"><?php wp_nonce_field( 'wuo_agent_pair' ); ?>
 				<table class="form-table"><tr><th><label for="master_url_repair">URL du maître</label></th><td><input class="regular-text" type="url" id="master_url_repair" name="master_url" value="<?php echo esc_attr( $settings['master_url'] ); ?>" required></td></tr>
 				<tr><th><label for="pairing_token_repair">Nouveau jeton</label></th><td><input class="regular-text" id="pairing_token_repair" name="pairing_token" required autocomplete="off"></td></tr>
-				<tr><th><label for="hosting_pool_repair">Hébergement</label></th><td><select id="hosting_pool_repair" name="hosting_pool"><option value="performance-a" <?php selected( $settings['hosting_pool'], 'performance-a' ); ?>>Performance A</option><option value="performance-b" <?php selected( $settings['hosting_pool'], 'performance-b' ); ?>>Performance B</option><option value="perso" <?php selected( $settings['hosting_pool'], 'perso' ); ?>>Mutualisé Perso</option></select></td></tr></table>
+			<tr><th><label for="hosting_pool_repair">Hébergement</label></th><td><select id="hosting_pool_repair" name="hosting_pool"><option value="performance-a" <?php selected( $settings['hosting_pool'], 'performance-a' ); ?>>Performance A</option><option value="performance-b" <?php selected( $settings['hosting_pool'], 'performance-b' ); ?>>Performance B</option><option value="perso" <?php selected( $settings['hosting_pool'], 'perso' ); ?>>Mutualisé Perso</option><option value="external" <?php selected( $settings['hosting_pool'], 'external' ); ?>>Externe</option><option value="ekinox-1" <?php selected( $settings['hosting_pool'], 'ekinox-1' ); ?>>Ekinox 1</option><option value="ekinox-2" <?php selected( $settings['hosting_pool'], 'ekinox-2' ); ?>>Ekinox 2</option><option value="ekinox-3" <?php selected( $settings['hosting_pool'], 'ekinox-3' ); ?>>Ekinox 3</option></select></td></tr></table>
 				<?php submit_button( 'Réappairer', 'secondary' ); ?>
 			</form></details>
 		<?php endif; ?></div><?php

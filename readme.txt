@@ -1,7 +1,7 @@
 === Z-Update — Agent ===
 Requires at least: 6.6
 Requires PHP: 7.4
-Stable tag: 0.4.19
+Stable tag: 0.4.20
 License: GPLv2 or later
 
 Agent léger de Z-Update pour hébergements WordPress mutualisés.
@@ -14,6 +14,9 @@ Agent léger de Z-Update pour hébergements WordPress mutualisés.
 4. Vérifier que la synchronisation, la santé et la sauvegarde UpdraftPlus apparaissent sur le maître.
 
 == Changelog ==
+
+= 0.4.20 =
+* Ajout de la sélection des pools Externe et Ekinox 1/2/3 lors de l’appairage.
 
 = 0.4.19 =
 * Datation et expiration du marqueur UpdraftPlus en cours pour éviter les faux blackouts côté maître.
