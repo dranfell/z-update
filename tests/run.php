@@ -90,6 +90,8 @@ $admin_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wuo-age
 $updraft_source = file_get_contents( dirname( __DIR__ ) . '/includes/class-wuo-agent-updraft.php' );
 $assert( false !== strpos( $client_source, 'maybe_alert_master_unreachable' ), 'L’agent doit alerter localement si le maître dépasse le délai de secours.' );
 $assert( false !== strpos( $admin_source, 'Dernier contact maître' ), 'L’écran agent doit afficher le dernier contact maître.' );
+$assert( false !== strpos( $admin_source, 'DISABLE_WP_CRON' ), 'L’écran agent doit détecter et expliquer DISABLE_WP_CRON.' );
+$assert( false !== strpos( $admin_source, 'aucun appel externe récent' ), 'L’écran agent doit alerter si le cron externe ne contacte plus le site.' );
 $assert( false !== strpos( $admin_source, 'ekinox-1' ), 'L’agent doit proposer les pools Ekinox.' );
 $assert( false !== strpos( $updraft_source, 'running_since' ), 'L’agent doit dater les sauvegardes UpdraftPlus en cours.' );
 $assert( false !== strpos( $updraft_source, 'RUNNING_MAX_AGE' ), 'Le marqueur UpdraftPlus en cours ne doit pas rester bloquant trop longtemps.' );

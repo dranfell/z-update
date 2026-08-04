@@ -46,6 +46,8 @@ final class WUO_Agent_Admin {
 		$last_full = absint( $settings['last_full_health'] ?? 0 );
 		$last_master_contact = absint( $settings['last_master_contact'] ?? 0 );
 		$master_unreachable_since = class_exists( 'WUO_Agent_Client' ) ? WUO_Agent_Client::master_unreachable_since() : 0;
+		$cron_disabled = defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON;
+		$cron_recent = $last_cron && $last_cron >= time() - 20 * MINUTE_IN_SECONDS;
 		?>
 		<div class="wrap"><h1>Z-Update — Agent</h1>
 		<?php if ( ! empty( $_GET['wuo_notice'] ) ) : $notice = sanitize_text_field( wp_unslash( $_GET['wuo_notice'] ) ); ?>
@@ -54,6 +56,7 @@ final class WUO_Agent_Admin {
 		<?php if ( $master_unreachable_since ) : ?>
 			<div class="notice notice-error"><p><?php echo esc_html( 'Le maître Z-Update est injoignable depuis ' . human_time_diff( $master_unreachable_since, time() ) . '. Les secours locaux restent appliqués selon la politique reçue.' ); ?></p></div>
 		<?php endif; ?>
+		<?php if ( ! $cron_disabled ) : ?><div class="notice notice-warning"><p>WP-Cron natif est actif. Pour utiliser cron-job.org sans déclenchement à chaque visite, ajoutez <code>define( 'DISABLE_WP_CRON', true );</code> dans <code>wp-config.php</code>.</p></div><?php elseif ( ! $cron_recent ) : ?><div class="notice notice-warning"><p>WP-Cron natif est désactivé, mais aucun appel externe récent n’a été détecté.</p></div><?php endif; ?>
 		<?php if ( empty( $settings['site_id'] ) ) : ?>
 			<p>Générez un jeton depuis le plugin maître, puis renseignez-le ici.</p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -71,6 +74,8 @@ final class WUO_Agent_Admin {
 			<tr><td>Politique</td><td><?php echo esc_html( 'security' === $mode ? 'Secours sécurité WordPress' : 'Contrôle total' ); ?></td></tr>
 			<tr><td>Dernier contact maître</td><td><?php echo $last_master_contact ? esc_html( wp_date( 'd/m/Y H:i:s', $last_master_contact ) ) : 'Pas encore détecté'; ?></td></tr>
 			<tr><td>Dernier passage WP-Cron</td><td><?php echo $last_cron ? esc_html( human_time_diff( $last_cron, time() ) ) : 'Pas encore détecté'; ?></td></tr>
+			<tr><td>Surveillance cron externe</td><td><?php echo $cron_disabled ? ( $cron_recent ? '<span style="color:#008a20">Actif · appel récent</span>' : '<span style="color:#b32d2e">À vérifier · aucun appel récent</span>' ) : '<span style="color:#b32d2e">WP-Cron natif actif</span>'; ?></td></tr>
+			<tr><td>Configuration à copier</td><td><code>define( 'DISABLE_WP_CRON', true );</code></td></tr>
 			<tr><td>Prochaine recherche de tâche</td><td><?php echo $next_poll ? esc_html( wp_date( 'd/m/Y H:i:s', $next_poll ) ) : 'Au prochain passage'; ?></td></tr>
 			<tr><td>Dernier contrôle complet</td><td><?php echo $last_full ? esc_html( human_time_diff( $last_full, time() ) ) : 'Pas encore effectué'; ?></td></tr>
 			</tbody></table>
