@@ -1,7 +1,7 @@
 === Z-Update — Agent ===
 Requires at least: 6.6
 Requires PHP: 7.4
-Stable tag: 0.4.21
+Stable tag: 0.4.22
 License: GPLv2 or later
 
 Agent léger de Z-Update pour hébergements WordPress mutualisés.
@@ -14,6 +14,10 @@ Agent léger de Z-Update pour hébergements WordPress mutualisés.
 4. Vérifier que la synchronisation, la santé et la sauvegarde UpdraftPlus apparaissent sur le maître.
 
 == Changelog ==
+
+= 0.4.22 =
+
+* Transmet au maître l’état de DISABLE_WP_CRON pour supervision centralisée.
 
 = 0.4.21 =
 

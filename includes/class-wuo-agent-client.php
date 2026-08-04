@@ -183,6 +183,7 @@ final class WUO_Agent_Client {
 			'control'       => array(
 				'effective_mode' => class_exists( 'WUO_Agent_Control' ) ? WUO_Agent_Control::effective_mode() : 'total',
 				'last_cron'      => absint( get_option( 'wuo_agent_last_cron', 0 ) ),
+				'cron_disabled'  => defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON,
 			),
 		) );
 
