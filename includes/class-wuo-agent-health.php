@@ -53,7 +53,33 @@ final class WUO_Agent_Health {
 			'php_memory_limit'  => ini_get( 'memory_limit' ),
 			'baseline_http_ms'  => isset( $baseline['http_ms'] ) ? round( $baseline['http_ms'], 1 ) : 0,
 			'baseline_db_ms'    => isset( $baseline['db_ms'] ) ? round( $baseline['db_ms'], 1 ) : 0,
+			'db_diagnostics'    => self::database_diagnostics(),
 			'checked_at'        => time(),
+		);
+	}
+
+	/** Collecte d’indicateurs d’entretien sans modifier la base. */
+	private static function database_diagnostics() {
+		global $wpdb;
+		$empty = array( 'database_size_bytes' => 0, 'autoload_bytes' => 0, 'autoload_count' => 0, 'expired_transients' => 0, 'revisions_count' => 0, 'largest_table' => '', 'largest_table_bytes' => 0 );
+		if ( ! is_object( $wpdb ) || empty( $wpdb->dbname ) ) {
+			return $empty;
+		}
+		$options = $wpdb->options;
+		$posts   = $wpdb->posts;
+		$size = $wpdb->get_row( $wpdb->prepare( 'SELECT COALESCE(SUM(data_length + index_length),0) AS bytes FROM information_schema.tables WHERE table_schema=%s', $wpdb->dbname ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$autoload = $wpdb->get_row( "SELECT COALESCE(SUM(LENGTH(option_value)),0) AS bytes,COUNT(*) AS items FROM {$options} WHERE autoload='yes'" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$expired = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$options} WHERE option_name LIKE %s AND option_value < %d", $wpdb->esc_like( '_transient_timeout_' ) . '%', time() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$revisions = $wpdb->get_var( "SELECT COUNT(*) FROM {$posts} WHERE post_type='revision'" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$largest = $wpdb->get_row( $wpdb->prepare( 'SELECT table_name,COALESCE(data_length + index_length,0) AS bytes FROM information_schema.tables WHERE table_schema=%s ORDER BY bytes DESC LIMIT 1', $wpdb->dbname ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		return array(
+			'database_size_bytes' => absint( $size->bytes ?? 0 ),
+			'autoload_bytes'      => absint( $autoload->bytes ?? 0 ),
+			'autoload_count'      => absint( $autoload->items ?? 0 ),
+			'expired_transients'  => absint( $expired ),
+			'revisions_count'     => absint( $revisions ),
+			'largest_table'       => sanitize_text_field( $largest->table_name ?? '' ),
+			'largest_table_bytes' => absint( $largest->bytes ?? 0 ),
 		);
 	}
 
