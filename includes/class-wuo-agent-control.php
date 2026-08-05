@@ -27,14 +27,22 @@ final class WUO_Agent_Control {
 	}
 
 	public static function allow_minor_core( $allowed ) {
-		return 'security' === self::effective_mode() ? $allowed : false;
+		// Les correctifs de sécurité WordPress restent natifs et ne passent plus
+		// par la file Z-Update, y compris lorsque le maître est joignable.
+		return $allowed;
 	}
 
 	public static function allow_core_update( $allowed, $item ) {
 		if ( 'total' === self::effective_mode() ) {
-			return false;
+			return self::is_security_core_item( $item ) ? $allowed : false;
 		}
 		return $allowed;
+	}
+
+	private static function is_security_core_item( $item ) {
+		$response = is_object( $item ) ? ( $item->response ?? '' ) : ( is_array( $item ) ? ( $item['response'] ?? '' ) : '' );
+		$response = strtolower( sanitize_key( $response ) );
+		return in_array( $response, array( 'minor', 'security', 'security_update' ), true ) || false !== strpos( $response, 'security' );
 	}
 
 	private static function is_paired() {
