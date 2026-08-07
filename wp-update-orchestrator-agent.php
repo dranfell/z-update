@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Z-Update — Agent
  * Description: Agent léger pour l’orchestration sécurisée des mises à jour WordPress sur hébergement mutualisé.
- * Version: 0.4.24
+ * Version: 0.4.26
  * Requires at least: 6.6
  * Requires PHP: 7.4
  * Author: Zimages
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'WUO_AGENT_VERSION', '0.4.24' );
+define( 'WUO_AGENT_VERSION', '0.4.26' );
 define( 'WUO_AGENT_FILE', __FILE__ );
 define( 'WUO_AGENT_DIR', plugin_dir_path( __FILE__ ) );
 

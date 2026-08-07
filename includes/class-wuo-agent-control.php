@@ -42,7 +42,7 @@ final class WUO_Agent_Control {
 	private static function is_security_core_item( $item ) {
 		$response = is_object( $item ) ? ( $item->response ?? '' ) : ( is_array( $item ) ? ( $item['response'] ?? '' ) : '' );
 		$response = strtolower( sanitize_key( $response ) );
-		return in_array( $response, array( 'minor', 'security', 'security_update' ), true ) || false !== strpos( $response, 'security' );
+		return in_array( $response, array( 'minor', 'security', 'security_update', 'autoupdate' ), true ) || false !== strpos( $response, 'security' );
 	}
 
 	private static function is_paired() {

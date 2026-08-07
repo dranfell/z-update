@@ -196,6 +196,11 @@ final class WUO_Agent_Client {
 				$settings['policy'] = self::sanitize_policy( $response['policy'] );
 			}
 			update_option( self::OPTION, $settings, false );
+			// The repository policy arrives through this heartbeat. Register the
+			// updater immediately so the next WordPress update check can discover it.
+			if ( class_exists( 'Z_Update_Agent_Updater' ) ) {
+				Z_Update_Agent_Updater::init();
+			}
 		}
 		return $response;
 	}

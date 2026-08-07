@@ -2,20 +2,35 @@
 defined( 'ABSPATH' ) || exit;
 
 final class Z_Update_Agent_Updater {
+	const DEFAULT_REPOSITORY = 'https://github.com/dranfell/z-update';
+	private static $checker = null;
+	private static $repository = '';
+
 	public static function init() {
 		$settings   = get_option( WUO_Agent_Client::OPTION, array() );
 		$policy     = isset( $settings['policy'] ) && is_array( $settings['policy'] ) ? $settings['policy'] : array();
 		$repository = Z_Update_Package_Verifier::valid_repository( $policy['update_repository'] ?? '' );
-		if ( ! $repository || ! Z_Update_Package_Verifier::register( WUO_AGENT_FILE, $repository, 'z-update-agent' ) ) {
+		$repository = $repository ?: self::DEFAULT_REPOSITORY;
+		if ( ! $repository ) {
 			return;
 		}
-		self::load_library();
-		$checker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
-			self::metadata_url( $repository ),
-			WUO_AGENT_FILE,
-			'wp-update-orchestrator-agent',
-			24
-		);
+
+		// The policy is received after plugins_loaded on a fresh install. Register
+		// lazily on the first heartbeat, while avoiding duplicate PUC instances.
+		if ( ! is_object( self::$checker ) || self::$repository !== $repository ) {
+			if ( ! Z_Update_Package_Verifier::register( WUO_AGENT_FILE, $repository, 'z-update-agent' ) ) {
+				return;
+			}
+			self::load_library();
+			self::$checker = YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+				self::metadata_url( $repository ),
+				WUO_AGENT_FILE,
+				'wp-update-orchestrator-agent',
+				24
+			);
+			self::$repository = $repository;
+		}
+		$checker = self::$checker;
 		$generation = absint( $policy['update_check_generation'] ?? 0 );
 		$last       = absint( get_option( 'z_update_agent_check_generation', 0 ) );
 		if ( $generation > $last && is_object( $checker ) && method_exists( $checker, 'checkForUpdates' ) ) {
