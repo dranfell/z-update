@@ -1,7 +1,7 @@
 === Z-Update — Agent ===
 Requires at least: 6.6
 Requires PHP: 7.4
-Stable tag: 0.4.28
+Stable tag: 0.4.29
 License: GPLv2 or later
 
 Agent léger de Z-Update pour hébergements WordPress mutualisés.

@@ -167,6 +167,7 @@ final class WUO_Agent_Client {
 
 		if ( $full ) {
 			$health = WUO_Agent_Health::collect();
+			$health['plugins'] = self::installed_plugins_inventory();
 			update_option( 'wuo_agent_health_snapshot', $health, false );
 			$settings['last_full_health'] = time();
 			update_option( self::OPTION, $settings, false );
@@ -337,5 +338,24 @@ final class WUO_Agent_Client {
 			}
 		}
 		return array_slice( $updates, 0, 100 );
+	}
+
+	private static function installed_plugins_inventory() {
+		if ( ! function_exists( 'get_plugins' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+		$all = function_exists( 'get_plugins' ) ? get_plugins() : array();
+		$active = function_exists( 'get_option' ) ? (array) get_option( 'active_plugins', array() ) : array();
+		$network = function_exists( 'get_site_option' ) ? (array) get_site_option( 'active_sitewide_plugins', array() ) : array();
+		$inventory = array();
+		foreach ( $all as $file => $plugin ) {
+			$inventory[] = array(
+				'file'    => substr( sanitize_text_field( $file ), 0, 190 ),
+				'name'    => substr( sanitize_text_field( $plugin['Name'] ?? $file ), 0, 190 ),
+				'version' => substr( sanitize_text_field( $plugin['Version'] ?? '' ), 0, 64 ),
+				'active'  => in_array( $file, $active, true ) || isset( $network[ $file ] ),
+			);
+		}
+		return array_slice( $inventory, 0, 300 );
 	}
 }
