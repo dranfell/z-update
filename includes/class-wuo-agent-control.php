@@ -9,7 +9,9 @@ final class WUO_Agent_Control {
 		add_filter( 'auto_update_plugin', '__return_false', PHP_INT_MAX );
 		add_filter( 'auto_update_theme', '__return_false', PHP_INT_MAX );
 		add_filter( 'allow_dev_auto_core_updates', '__return_false', PHP_INT_MAX );
-		add_filter( 'allow_major_auto_core_updates', '__return_false', PHP_INT_MAX );
+		// Les mises à jour majeures WordPress sont exécutées par le mécanisme
+		// natif de WordPress, comme les correctifs de sécurité.
+		add_filter( 'allow_major_auto_core_updates', array( __CLASS__, 'allow_major_core' ), PHP_INT_MAX );
 		add_filter( 'allow_minor_auto_core_updates', array( __CLASS__, 'allow_minor_core' ), PHP_INT_MAX );
 		add_filter( 'auto_update_core', array( __CLASS__, 'allow_core_update' ), PHP_INT_MAX, 2 );
 	}
@@ -32,9 +34,13 @@ final class WUO_Agent_Control {
 		return $allowed;
 	}
 
+	public static function allow_major_core( $allowed ) {
+		return true;
+	}
+
 	public static function allow_core_update( $allowed, $item ) {
 		if ( 'total' === self::effective_mode() ) {
-			return self::is_security_core_item( $item ) ? $allowed : false;
+			return self::is_native_core_item( $item ) ? true : false;
 		}
 		return $allowed;
 	}
@@ -43,6 +49,11 @@ final class WUO_Agent_Control {
 		$response = is_object( $item ) ? ( $item->response ?? '' ) : ( is_array( $item ) ? ( $item['response'] ?? '' ) : '' );
 		$response = strtolower( sanitize_key( $response ) );
 		return in_array( $response, array( 'minor', 'security', 'security_update', 'autoupdate' ), true ) || false !== strpos( $response, 'security' );
+	}
+
+	private static function is_native_core_item( $item ) {
+		$response = is_object( $item ) ? ( $item->response ?? '' ) : ( is_array( $item ) ? ( $item['response'] ?? '' ) : '' );
+		return '' !== strtolower( sanitize_key( $response ) );
 	}
 
 	private static function is_paired() {

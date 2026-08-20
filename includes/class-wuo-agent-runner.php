@@ -97,7 +97,15 @@ final class WUO_Agent_Runner {
 			}
 			wp_update_plugins();
 			$updates = get_site_transient( 'update_plugins' );
+			$pending = array();
 			foreach ( $slugs as $plugin_file ) {
+				// Le lot peut avoir été exécuté entre sa détection et son passage
+				// (WordPress, un autre processus ou un essai précédent). Une
+				// extension déjà à la cible est donc considérée comme réussie.
+				$installed = self::installed_plugin_version( $plugin_file );
+				if ( self::version_satisfies_target( $targets[ $plugin_file ], $installed ) ) {
+					continue;
+				}
 				if ( empty( $updates->response[ $plugin_file ] ) ) {
 					return new WP_Error( 'plugin_batch_update_missing', 'Une mise à jour du micro-lot n’est plus disponible : ' . $plugin_file );
 				}
@@ -105,19 +113,23 @@ final class WUO_Agent_Runner {
 				if ( ! self::versions_match( $targets[ $plugin_file ], $available ) ) {
 					return self::version_changed_error( $targets[ $plugin_file ], $available, $plugin_file );
 				}
+				$pending[] = $plugin_file;
+			}
+			if ( ! $pending ) {
+				return true;
 			}
 			$batch_skin = new Bulk_Plugin_Upgrader_Skin();
-			$results    = ( new Plugin_Upgrader( $batch_skin ) )->bulk_upgrade( $slugs );
+			$results    = ( new Plugin_Upgrader( $batch_skin ) )->bulk_upgrade( $pending );
 			if ( ! is_array( $results ) ) {
 				return new WP_Error( 'plugin_batch_failed', 'WordPress n’a pas confirmé le micro-lot d’extensions.' );
 			}
-			foreach ( $slugs as $plugin_file ) {
+			foreach ( $pending as $plugin_file ) {
 				if ( ! isset( $results[ $plugin_file ] ) || is_wp_error( $results[ $plugin_file ] ) || false === $results[ $plugin_file ] || null === $results[ $plugin_file ] ) {
 					$message = isset( $results[ $plugin_file ] ) && is_wp_error( $results[ $plugin_file ] ) ? $results[ $plugin_file ]->get_error_message() : 'Échec non détaillé.';
 					return new WP_Error( 'plugin_batch_partial_failure', $plugin_file . ' : ' . $message );
 				}
 				$installed = self::installed_plugin_version( $plugin_file );
-				if ( ! self::versions_match( $targets[ $plugin_file ], $installed ) ) {
+				if ( ! self::version_satisfies_target( $targets[ $plugin_file ], $installed ) ) {
 					return self::installed_version_error( $targets[ $plugin_file ], $installed, $plugin_file );
 				}
 			}
@@ -196,6 +208,13 @@ final class WUO_Agent_Runner {
 
 	private static function versions_match( $expected, $actual ) {
 		return '' !== (string) $expected && hash_equals( (string) $expected, (string) $actual );
+	}
+
+	private static function version_satisfies_target( $target, $installed ) {
+		if ( self::versions_match( $target, $installed ) ) {
+			return true;
+		}
+		return '' !== (string) $target && '' !== (string) $installed && version_compare( (string) $installed, (string) $target, '>=' );
 	}
 
 	private static function version_changed_error( $expected, $available, $item = '' ) {
