@@ -34,16 +34,14 @@ final class WUO_Agent_Health {
 			update_option( self::BASELINE_OPTION, $baseline, false );
 		}
 
-		$degraded = ! $healthy;
-		if ( ! $degraded && ! empty( $baseline['http_ms'] ) ) {
-			$degraded = $http_ms > ( (float) $baseline['http_ms'] * 2 );
-		}
-		if ( ! $degraded && ! empty( $baseline['db_ms'] ) ) {
-			$degraded = $db_ms > ( (float) $baseline['db_ms'] * 2 );
-		}
+		// Latency is advisory. Availability alone determines execution safety.
+		$performance_degraded = self::performance_degraded( $http_ms, $db_ms, $baseline );
+		$degraded = ! $healthy || $performance_degraded;
 
 		return array(
-			'healthy'           => $healthy && ! $degraded,
+			'healthy'           => $healthy,
+			'db_ok'             => $db_ok,
+			'performance_degraded' => $performance_degraded,
 			'degraded'          => $degraded,
 			'http_code'         => $code,
 			'http_ms'           => $http_ms,
@@ -56,6 +54,12 @@ final class WUO_Agent_Health {
 			'db_diagnostics'    => self::database_diagnostics(),
 			'checked_at'        => time(),
 		);
+	}
+
+	/** A relative increase matters only above a meaningful absolute latency. */
+	public static function performance_degraded( $http_ms, $db_ms, array $baseline ) {
+		return ( $http_ms > 2000 && ! empty( $baseline['http_ms'] ) && $http_ms > 2 * $baseline['http_ms'] )
+			|| ( $db_ms > 50 && ! empty( $baseline['db_ms'] ) && $db_ms > 2 * $baseline['db_ms'] );
 	}
 
 	/** Collecte d’indicateurs d’entretien sans modifier la base. */
